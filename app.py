@@ -140,6 +140,29 @@ kpi_card(k7,"Budget Used", f"{budget['pct_spent']}%",
          D["danger"] if budget["pct_spent"]>90 else (D["warning"] if budget["pct_spent"]>75 else D["success"]),
          f"€{budget['spent']:,.0f}")
 
+# ── Quick access cards ───────────────────────────────────────────────────────
+section_label("🔗 Quick Access")
+qa1, qa2, qa3, qa4, qa5, qa6 = st.columns(6)
+for col, icon, label, page in [
+    (qa1, "📦", "WP Overview",  "pages/work_packages.py"),
+    (qa2, "🏁", "Milestones",   "pages/milestones.py"),
+    (qa3, "📄", "Deliverables", "pages/deliverables.py"),
+    (qa4, "⚙️",  "Tasks",       "pages/tasks.py"),
+    (qa5, "📊", "KPIs",         "pages/kpis.py"),
+    (qa6, "🌍", "Partner Map",  "pages/partner_map.py"),
+]:
+    bg2 = D["bg2"]; border = D["border"]; txt = D["text"]
+    col.markdown(
+        f"<div style='background:{bg2};border:1px solid {border};border-radius:10px;"
+        f"padding:0.7rem;text-align:center'>"
+        f"<div style='font-size:1.5rem'>{icon}</div>"
+        f"<div style='font-size:0.78rem;color:{txt}'>{label}</div></div>",
+        unsafe_allow_html=True)
+    if col.button(f"Open", key=f"qa_{label}", use_container_width=True):
+        st.switch_page(page)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
 # ── Charts ─────────────────────────────────────────────────────────────────────
 section_label("📈 Progress Charts")
 
