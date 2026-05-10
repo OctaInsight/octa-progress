@@ -50,9 +50,9 @@ if not projects:
         f"border-radius:10px;padding:1.2rem 1.5rem'>"
         f"<strong style='color:{acc}'>No funded projects found</strong><br>"
         f"<span style='color:{muted};font-size:0.88rem'>"
-        f"Projects become visible here when their status is changed to "
-        f"<code>funded_project</code> or <code>ongoing_project</code> "
-        f"in the Proposal Tracker. "
+        f"Projects become visible here when their status is set to "
+        f"<strong>Funded</strong> in the Proposal Tracker app, or when "
+        f"<code>lifecycle_status</code> is set to <code>funded_project</code>. "
         + (f"Your organisation filter: <strong>{org}</strong>" if org and not is_admin else "")
         + "</span></div>",
         unsafe_allow_html=True)
