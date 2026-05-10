@@ -31,10 +31,10 @@ def _layout(fig, title="", height=380):
     fig.update_layout(
         title=dict(text=title, font=dict(color=D["text"], size=13)) if title else None,
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        height=height, margin=dict(l=10, r=10, t=80 if title else 20, b=50),
+        height=height, margin=dict(l=10, r=10, t=100 if title else 20, b=50),
         font=dict(color=D["text"], size=11),
-        legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color=D["text"], size=11),
-                    orientation="h", yanchor="bottom", y=1.01, xanchor="left", x=0),
+        legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color=D["text"], size=10),
+                    orientation="h", yanchor="bottom", y=1.08, xanchor="left", x=0),
         xaxis=dict(gridcolor="rgba(255,255,255,0.06)", color=D["text"],
                    zerolinecolor="rgba(255,255,255,0.1)"),
         yaxis=dict(gridcolor="rgba(255,255,255,0.06)", color=D["text"],
