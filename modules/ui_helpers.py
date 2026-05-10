@@ -212,12 +212,16 @@ def sidebar_nav():
         _nav_section("Monitoring")
         if st.button("🏠  Dashboard",           key="nav_dash",  use_container_width=True):
             st.switch_page("app.py")
+        if st.button("📦  WP Overview",         key="nav_wp",    use_container_width=True):
+            st.switch_page("pages/work_packages.py")
         if st.button("🏁  Milestones",          key="nav_ms",    use_container_width=True):
             st.switch_page("pages/milestones.py")
         if st.button("📄  Deliverables",        key="nav_del",   use_container_width=True):
             st.switch_page("pages/deliverables.py")
         if st.button("⚙️  Tasks",               key="nav_task",  use_container_width=True):
             st.switch_page("pages/tasks.py")
+        if st.button("📊  KPIs",                key="nav_kpi",   use_container_width=True):
+            st.switch_page("pages/kpis.py")
         if st.button("🌍  Partner Map",         key="nav_map",   use_container_width=True):
             st.switch_page("pages/partner_map.py")
 
