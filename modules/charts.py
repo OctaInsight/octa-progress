@@ -7,8 +7,27 @@ Baseline/target shown in pale colours; actual in solid colours.
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import date
-from config import (DARK as D, TASK_STATUS_COLORS,
-                    DELIVERABLE_STATUS_COLORS, MILESTONE_STATUS_COLORS)
+# All colours defined inline — no config dependency at module level
+try:
+    from config import DARK as D
+except ImportError:
+    D = {"bg":"#0f1421","bg2":"#1a2235","bg3":"#232f45",
+         "text":"#e2e8f0","muted":"#8899b0","accent":"#00BCD4",
+         "accent2":"#FF6B35","success":"#6fcf97","warning":"#f6cc52",
+         "danger":"#fc8181","border":"rgba(255,255,255,0.09)"}
+
+TASK_STATUS_COLORS = {
+    "planned":"#8899b0","ongoing":"#00BCD4",
+    "completed":"#6fcf97","delayed":"#fc8181","cancelled":"#4a4a6a",
+}
+DELIVERABLE_STATUS_COLORS = {
+    "planned":"#8899b0","in_progress":"#f6cc52","submitted":"#00BCD4",
+    "accepted":"#6fcf97","delayed":"#fc8181","cancelled":"#4a4a6a",
+}
+MILESTONE_STATUS_COLORS = {
+    "planned":"#8899b0","achieved":"#6fcf97",
+    "partially_achieved":"#f6cc52","delayed":"#fc8181","not_achieved":"#e74c3c",
+}
 # ── Local helper (avoids circular import with database.py) ────────────────────
 def __date_to_month(project_start, d):
     """Convert a calendar date to a relative project month number (1-based)."""
