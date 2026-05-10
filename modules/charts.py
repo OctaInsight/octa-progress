@@ -7,9 +7,21 @@ Baseline/target shown in pale colours; actual in solid colours.
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import date
-from modules.database import date_to_month
 from config import (DARK as D, TASK_STATUS_COLORS,
                     DELIVERABLE_STATUS_COLORS, MILESTONE_STATUS_COLORS)
+# ── Local helper (avoids circular import with database.py) ────────────────────
+def __date_to_month(project_start, d):
+    """Convert a calendar date to a relative project month number (1-based)."""
+    if not project_start or not d:
+        return None
+    try:
+        from dateutil.relativedelta import relativedelta
+        delta = relativedelta(d, project_start)
+        return max(1, delta.years * 12 + delta.months + 1)
+    except Exception:
+        return None
+
+
 
 
 def _layout(fig, title: str = "", height: int = 380) -> go.Figure:
@@ -153,7 +165,7 @@ def chart_milestone_timeline(milestones: list,
             try:
                 ad = date.fromisoformat(str(m["achieved_date"])[:10])
                 ach_x.append(ad if use_dates else
-                             (date_to_month(project_start, ad) if project_start else
+                             (_date_to_month(project_start, ad) if project_start else
                               int(m.get("due_month") or 0)))
                 ach_y.append(name)
                 ach_labels.append(ad.strftime("%B %Y") if use_dates else
