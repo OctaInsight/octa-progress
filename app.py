@@ -320,6 +320,54 @@ if partners:
 else:
     st.info("No partners with country data found for this project.")
 
+# ── Save Progress Snapshot ───────────────────────────────────────────────────
+section_label("📸 Save Progress Snapshot")
+st.markdown(
+    f"<p style='color:{muted};font-size:0.84rem'>"
+    f"Snapshots record the current project state (task/deliverable/milestone counts "
+    f"and budget) for a given reporting period. They power the "
+    f"<strong>Progress Over Time</strong> chart.</p>",
+    unsafe_allow_html=True)
+
+with st.form("snapshot_form"):
+    sn1, sn2 = st.columns([1, 3])
+    with sn1:
+        snap_period = st.number_input(
+            "Reporting Period", min_value=1, max_value=20,
+            value=len(snapshots) + 1,
+            help="e.g. 1 = first year, 2 = second year (or quarter 1, 2, 3…)"
+        )
+    with sn2:
+        snap_notes = st.text_input(
+            "Notes", placeholder="e.g. End of Year 1 / Mid-term review"
+        )
+    if st.form_submit_button("📸 Save Snapshot", type="primary", use_container_width=True):
+        from modules.database import save_snapshot as _save_snap
+        _b  = budget   # already loaded above
+        ok  = _save_snap(sel_pid, snap_period, tasks, deliverables, milestones,
+                         _b["planned"], _b["spent"], snap_notes)
+        if ok:
+            st.success(f"✅ Snapshot for Period {snap_period} saved!")
+            st.rerun()
+        else:
+            st.error("❌ Save failed — check Supabase permissions.")
+
+if snapshots:
+    with st.expander(f"📋 Saved Snapshots ({len(snapshots)})", expanded=False):
+        for s in reversed(snapshots):
+            bg2 = D["bg2"]; border = D["border"]; txt = D["text"]
+            st.markdown(
+                f"<div style='background:{bg2};border:1px solid {border};"
+                f"border-radius:8px;padding:0.5rem 0.9rem;margin-bottom:0.3rem;"
+                f"font-size:0.83rem;display:flex;gap:1.5rem;flex-wrap:wrap'>"
+                f"<strong style='color:{txt}'>Period {s['reporting_period']}</strong>"
+                f"<span style='color:{muted}'>{s.get('snapshot_date','')[:10]}</span>"
+                f"<span style='color:{D["accent"]}'>Progress: {s.get('overall_progress_pct',0):.1f}%</span>"
+                f"<span style='color:{D["success"]}'>Tasks: {s.get('tasks_completed',0)}/{s.get('tasks_total',0)}</span>"
+                f"<span style='color:{D["warning"]}'>Deliverables: {s.get('deliverables_accepted',0)}/{s.get('deliverables_total',0)}</span>"
+                + (f"<span style='color:{muted}'>{s.get('notes','')}</span>" if s.get("notes") else "")
+                + "</div>", unsafe_allow_html=True)
+
 # ── Upcoming deadlines ────────────────────────────────────────────────────────
 if current_proj_month:
     section_label("📅 Next 3 Months — Upcoming Deadlines")
