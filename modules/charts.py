@@ -436,3 +436,96 @@ def fig_to_html(fig: go.Figure, title: str = "") -> str:
         config={"responsive": True, "scrollZoom": True,
                 "displayModeBar": True},
     )
+
+
+# ── Partner map ───────────────────────────────────────────────────────────────
+
+def chart_partner_map(partners: list, project_title: str = "",
+                       scope: str = "world") -> go.Figure:
+    """
+    Choropleth map of project partner countries.
+    Coordinator = accent/teal; Partners = green.
+    """
+    try:
+        from config import COUNTRY_ISO
+    except ImportError:
+        COUNTRY_ISO = {}
+
+    if not partners:
+        return go.Figure()
+
+    country_data = {}
+    for p in partners:
+        country  = (p.get("country") or "").strip()
+        iso      = COUNTRY_ISO.get(country, "")
+        if not iso:
+            continue
+        is_coord = p.get("is_coordinator", False)
+        if country not in country_data:
+            country_data[country] = {"iso": iso, "is_coord": is_coord, "partners": []}
+        if is_coord:
+            country_data[country]["is_coord"] = True
+        pname = p.get("full_name","") or p.get("short_name","")
+        country_data[country]["partners"].append(pname)
+
+    if not country_data:
+        return go.Figure()
+
+    coord_rows   = [(c, i) for c, i in country_data.items() if i["is_coord"]]
+    partner_rows = [(c, i) for c, i in country_data.items() if not i["is_coord"]]
+
+    fig = go.Figure()
+
+    if partner_rows:
+        fig.add_trace(go.Choropleth(
+            locations=[i["iso"] for _, i in partner_rows],
+            z=[1] * len(partner_rows),
+            text=[c for c, _ in partner_rows],
+            customdata=[[len(i["partners"]), "<br>".join(f"• {p}" for p in i["partners"])]
+                        for _, i in partner_rows],
+            colorscale=[[0, D["success"]], [1, D["success"]]],
+            showscale=False,
+            marker_line_color="rgba(255,255,255,0.3)",
+            marker_line_width=0.8,
+            hovertemplate="<b>%{text}</b><br>Partners: %{customdata[0]}<br>%{customdata[1]}<extra></extra>",
+            name="Partner",
+        ))
+
+    if coord_rows:
+        fig.add_trace(go.Choropleth(
+            locations=[i["iso"] for _, i in coord_rows],
+            z=[2] * len(coord_rows),
+            text=[c for c, _ in coord_rows],
+            customdata=[[len(i["partners"]), "<br>".join(f"• {p}" for p in i["partners"]) + "<br>⭐ Coordinator"]
+                        for _, i in coord_rows],
+            colorscale=[[0, D["accent"]], [1, D["accent"]]],
+            showscale=False,
+            marker_line_color="rgba(255,255,255,0.5)",
+            marker_line_width=1.2,
+            hovertemplate="<b>%{text}</b><br>%{customdata[1]}<extra></extra>",
+            name="Coordinator",
+        ))
+
+    fig.update_layout(
+        geo=dict(
+            scope=scope,
+            showcoastlines=True, coastlinecolor="rgba(255,255,255,0.15)",
+            showland=True,  landcolor="#1a2235",
+            showocean=True, oceancolor="#0f1421",
+            showframe=False, showcountries=True,
+            countrycolor="rgba(255,255,255,0.08)",
+            bgcolor="rgba(0,0,0,0)",
+        ),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        height=420,
+        margin=dict(l=0, r=0, t=40, b=0),
+        font_color=D["text"],
+        showlegend=True,
+        legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color=D["text"])),
+        title=dict(
+            text=f"🌍 Partner Countries — {project_title}" if project_title else "🌍 Partner Countries",
+            font=dict(color=D["text"], size=13),
+        ),
+    )
+    return fig
