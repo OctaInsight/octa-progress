@@ -87,7 +87,23 @@ partners    = get_project_partners(sel_pid)
 
 proj_start_raw = proj.get("project_start_date")
 proj_start     = date.fromisoformat(str(proj_start_raw)[:10]) if proj_start_raw else None
-proj_dur       = int(proj.get("project_duration_months") or 36)
+# Read duration from whichever field is populated
+_dur_raw = (proj.get("project_duration_months") or
+            proj.get("duration_months") or
+            proj.get("proposal_duration") or
+            proj.get("duration") or None)
+if _dur_raw:
+    try:    proj_dur = int(_dur_raw)
+    except: proj_dur = None
+elif proj_start and proj.get("project_end_date"):
+    try:
+        from dateutil.relativedelta import relativedelta as _rd
+        _end = date.fromisoformat(str(proj.get("project_end_date"))[:10])
+        _d   = _rd(_end, proj_start)
+        proj_dur = _d.years * 12 + _d.months + 1
+    except: proj_dur = None
+else:
+    proj_dur = None
 acronym        = proj.get("acronym","") or sel_pid
 
 # Current month of project
@@ -102,14 +118,18 @@ ms_stats  = get_milestone_stats(milestones, proj_start)
 
 # ── Project info bar ──────────────────────────────────────────────────────────
 pi1, pi2, pi3, pi4 = st.columns(4)
-lifecycle   = proj.get("lifecycle_status","").replace("_"," ").title()
-lc_color    = D["success"] if "ongoing" in (proj.get("lifecycle_status","")) else \
-              (D["accent"] if "funded" in (proj.get("lifecycle_status","")) else D["muted"])
+# Use lifecycle_status if meaningful, otherwise fall back to original status field
+_ls = (proj.get("lifecycle_status") or "").strip()
+_st = (proj.get("status") or "").strip()
+lifecycle   = _ls.replace("_"," ").title() if _ls and _ls not in ("","draft_proposal") else _st
+lc_color    = (D["success"] if any(w in _ls.lower() for w in ("ongoing","ended"))
+               else D["accent"] if any(w in (_ls+_st).lower() for w in ("funded","project"))
+               else D["muted"])
 
 for col, label, val in [
     (pi1, "Status",     lifecycle),
     (pi2, "Start Date", str(proj_start) if proj_start else "—"),
-    (pi3, "Duration",   f"{proj_dur} months"),
+    (pi3, "Duration",   f"{proj_dur} months" if proj_dur else "—"),
     (pi4, "Current Month", f"M{current_proj_month}" if current_proj_month else "—"),
 ]:
     bg2 = D["bg2"]
@@ -121,6 +141,44 @@ for col, label, val in [
         f"</div>", unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
+
+# ── Project Settings ─────────────────────────────────────────────────────────
+with st.expander("⚙️ Project Settings — Start Date, Duration, Status", expanded=not proj_start):
+    ps1, ps2, ps3, ps4 = st.columns(4)
+    with ps1:
+        new_start = st.date_input(
+            "Project Start Date",
+            value=proj_start if proj_start else date.today(),
+            key="proj_start_input"
+        )
+    with ps2:
+        new_dur = st.number_input(
+            "Duration (months)", min_value=1, max_value=120,
+            value=int(proj_dur) if proj_dur else 24, key="proj_dur_input"
+        )
+    with ps3:
+        status_choices = ["Funded","ongoing_project","ended_project"]
+        cur_status = (proj.get("lifecycle_status") or proj.get("status") or "Funded")
+        cur_idx    = next((i for i,s in enumerate(status_choices) if s.lower() in cur_status.lower()), 0)
+        new_status_sel = st.selectbox("Project Status", status_choices, index=cur_idx,
+                                       key="proj_status_sel")
+    with ps4:
+        new_grant = st.text_input("Grant Agreement No.",
+                                   value=proj.get("grant_agreement_number","") or "",
+                                   key="proj_grant")
+    if st.button("💾 Save Project Settings", type="primary"):
+        from modules.database import update_project_status
+        ok = update_project_status(sel_pid, {
+            "project_start_date":      new_start.isoformat(),
+            "project_duration_months": new_dur,
+            "lifecycle_status":        new_status_sel,
+            "grant_agreement_number":  new_grant.strip(),
+        })
+        if ok:
+            st.success("✅ Project settings saved! Reloading…")
+            st.rerun()
+        else:
+            st.error("Save failed — check your Supabase permissions.")
 
 # ── KPI row ───────────────────────────────────────────────────────────────────
 section_label("📊 At a Glance")
@@ -215,6 +273,22 @@ with c5:
             f"Go to <strong style='color:{acc2}'>Milestones</strong> or "
             f"<strong style='color:{acc2}'>Deliverables</strong> pages to save a snapshot.</div>"
             f"</div>", unsafe_allow_html=True)
+
+# ── KPI progress chart ───────────────────────────────────────────────────────
+if kpis_short:
+    section_label("📊 KPI Achievement — Short-Term")
+    from modules.charts import chart_kpi_achievement
+    fig_kpi = chart_kpi_achievement(kpis_short, "Short-Term KPI Progress (Baseline → Target → Achieved)")
+    st.plotly_chart(fig_kpi, use_container_width=True)
+    kc1, kc2 = st.columns(2)
+    with kc1:
+        if st.button("📥 Export KPI chart", key="exp_kpi_dash"):
+            html_kpi = fig_to_html(fig_kpi, f"{acronym} — KPI Progress")
+            st.download_button("⬇ Download HTML", html_kpi.encode("utf-8"),
+                               f"{acronym}_kpi_progress.html","text/html", key="dl_kpi_dash")
+    with kc2:
+        if st.button("📊 Update KPI Values →", key="goto_kpi"):
+            st.switch_page("pages/kpis.py")
 
 # ── Milestone timeline ────────────────────────────────────────────────────────
 section_label("🏁 Milestone Timeline")
