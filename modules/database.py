@@ -20,38 +20,33 @@ def _now():
 
 # ── Funded Projects ───────────────────────────────────────────────────────────
 
-def get_funded_projects(organisation: str = "", is_admin: bool = False) -> list:
+def get_funded_projects(organisation: str = "", is_admin: bool = False) -> tuple:
     """
-    Return funded/ongoing projects.
-    Non-admins: only projects where their org is coordinator or partner.
+    Returns (projects_list, error_string|None).
+    Matches proposals where status = 'Funded' (proposal app)
+    OR lifecycle_status = 'funded_project' (project phase).
+    No organisation filtering — all funded projects are visible.
     """
     try:
         resp = db().table("proposals").select("*") \
-                   .in_("lifecycle_status", list(FUNDED_STATUSES)) \
                    .order("proposal_id", desc=True).execute()
-        projects = resp.data or []
-    except Exception:
-        return []
+        all_props = resp.data or []
+    except Exception as e:
+        return [], str(e)
 
-    if is_admin or not organisation:
-        return projects
+    FUNDED = {
+        "Funded", "funded",
+        "funded_project", "ongoing_project", "ended_project",
+        "Ongoing", "ongoing", "Ended", "ended",
+    }
 
-    org_lower = organisation.strip().lower()
-    filtered  = []
-    for p in projects:
-        coord = (p.get("coordinator") or "").lower()
-        if org_lower and (org_lower in coord or coord in org_lower):
-            filtered.append(p); continue
-        plist = p.get("partners_list") or []
-        if isinstance(plist, str):
-            try:    plist = json.loads(plist)
-            except: plist = [plist]
-        for entry in plist:
-            el = str(entry).lower().strip()
-            if org_lower and (org_lower in el or el in org_lower):
-                filtered.append(p); break
-    return filtered
+    projects = [
+        p for p in all_props
+        if (p.get("status") or "")           in FUNDED
+        or (p.get("lifecycle_status") or "")  in FUNDED
+    ]
 
+    return projects, None
 
 def get_project(proposal_id: str) -> dict | None:
     try:
