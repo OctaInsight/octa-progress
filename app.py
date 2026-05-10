@@ -41,21 +41,16 @@ page_header("Project Progress Tracker",
             "Monitor milestones, deliverables and tasks for funded projects", "🏗️")
 
 # ── Project selector ──────────────────────────────────────────────────────────
-projects = get_funded_projects(organisation=org, is_admin=is_admin)
+projects, db_error = get_funded_projects(organisation=org, is_admin=is_admin)
+if db_error:
+    st.error(f"❌ Database error: {db_error}")
+    st.stop()
 
 if not projects:
-    acc = D["accent"]
-    st.markdown(
-        f"<div style='background:{D["bg2"]};border-left:4px solid {acc};"
-        f"border-radius:10px;padding:1.2rem 1.5rem'>"
-        f"<strong style='color:{acc}'>No funded projects found</strong><br>"
-        f"<span style='color:{muted};font-size:0.88rem'>"
-        f"Projects become visible here when their status is set to "
-        f"<strong>Funded</strong> in the Proposal Tracker app, or when "
-        f"<code>lifecycle_status</code> is set to <code>funded_project</code>. "
-        + (f"Your organisation filter: <strong>{org}</strong>" if org and not is_admin else "")
-        + "</span></div>",
-        unsafe_allow_html=True)
+    st.warning(
+        "⚠️ No funded projects visible. "
+        "Make sure a proposal status is set to **Funded** in the Proposal Tracker."
+    )
     st.stop()
 
 proj_opts = {}
