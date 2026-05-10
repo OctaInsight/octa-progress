@@ -353,139 +353,42 @@ def chart_kpi_achievement(kpis: list,
 
 def chart_budget_gauge(planned: float, spent: float,
                         title: str = "Budget Consumption") -> go.Figure:
-    pct = round(spent / planned * 100, 1) if planned else 0
+    pct   = round(spent / planned * 100, 1) if planned else 0
     color = D["success"] if pct < 75 else (D["warning"] if pct < 95 else D["danger"])
 
     fig = go.Figure(go.Indicator(
-        mode="gauge+number+delta",
-        value=pct,
-        delta={"reference": 100, "valueformat": ".1f",
-               "increasing": {"color": D["danger"]},
-               "decreasing": {"color": D["success"]}},
-        number={"suffix": "%", "font": {"color": D["text"], "size": 32}},
-        gauge={
-            "axis":  {"range":[0,100], "tickcolor":D["muted"],
-                      "tickfont":{"color":D["muted"]}},
-            "bar":   {"color": color},
-            "bgcolor": "#232f45",
-            "bordercolor": "#2d4a7a",
-            "steps": [
-                {"range":[0,75],  "color": "#232f45"},
-                {"range":[75,95], "color": "rgba(246,204,82,0.15)"},
-                {"range":[95,100],"color": "rgba(252,129,129,0.15)"},
-            ],
-            "threshold": {"line":{"color":D["danger"],"width":3},
-                          "thickness":0.8, "value":90},
+        mode   = "gauge+number",
+        value  = pct,
+        number = {"suffix": "%", "font": {"color": D["text"], "size": 36}},
+        gauge  = {
+            "axis": {
+                "range":    [0, 100],
+                "tickvals": [0, 25, 50, 75, 100],
+                "ticktext": ["0%","25%","50%","75%","100%"],
+                "tickcolor": D["muted"],
+                "tickfont":  {"color": D["muted"], "size": 10},
+            },
+            "bar":         {"color": color, "thickness": 0.7},
+            "bgcolor":     "rgba(0,0,0,0)",
+            "borderwidth": 0,
+            "threshold": {
+                "line":      {"color": D["danger"], "width": 3},
+                "thickness": 0.8,
+                "value":     90,
+            },
         },
-        title={"text": f"<b>Budget Used</b><br>€{spent:,.0f} of €{planned:,.0f}",
-               "font": {"color": D["muted"], "size": 12}},
+        title = {
+            "text": f"<b>{title}</b><br><span style='font-size:0.85em'>"
+                    f"€{spent:,.0f} spent of €{planned:,.0f} planned</span>",
+            "font": {"color": D["muted"], "size": 12},
+        },
     ))
-    return _layout(fig, title, 300)
-
-
-# ── 9. Partner map ────────────────────────────────────────────────────────────
-
-def chart_partner_map(partners: list, project_title: str = "",
-                       scope: str = "world") -> go.Figure:
-    """
-    Choropleth map of project partner countries.
-    Coordinator shown in accent colour; partners in success green.
-    """
-    from config import COUNTRY_ISO
-
-    if not partners:
-        return go.Figure()
-
-    # Deduplicate by country
-    country_data = {}
-    for p in partners:
-        country = (p.get("country") or "").strip()
-        iso     = COUNTRY_ISO.get(country,"")
-        if not iso:
-            continue
-        is_coord = p.get("is_coordinator", False)
-        if country not in country_data:
-            country_data[country] = {
-                "iso":        iso,
-                "is_coord":   is_coord,
-                "partners":   [],
-            }
-        if is_coord:
-            country_data[country]["is_coord"] = True
-        pname = p.get("full_name","") or p.get("short_name","")
-        country_data[country]["partners"].append(pname)
-
-    if not country_data:
-        return go.Figure()
-
-    rows = []
-    for country, info in country_data.items():
-        color_val = 2 if info["is_coord"] else 1
-        rows.append({
-            "country":   country,
-            "iso":       info["iso"],
-            "color_val": color_val,
-            "is_coord":  info["is_coord"],
-            "partner_list": "<br>".join(f"• {p}" for p in info["partners"]),
-            "n_partners": len(info["partners"]),
-        })
-
-    coord_rows   = [r for r in rows if r["is_coord"]]
-    partner_rows = [r for r in rows if not r["is_coord"]]
-
-    fig = go.Figure()
-
-    # Partner countries (green)
-    if partner_rows:
-        fig.add_trace(go.Choropleth(
-            locations=[r["iso"] for r in partner_rows],
-            z=[1]*len(partner_rows),
-            text=[r["country"] for r in partner_rows],
-            customdata=[[r["n_partners"],r["partner_list"]] for r in partner_rows],
-            colorscale=[[0,D["success"]],[1,D["success"]]],
-            showscale=False,
-            marker_line_color="rgba(255,255,255,0.3)",
-            marker_line_width=0.8,
-            hovertemplate="<b>%{text}</b><br>Partners: %{customdata[0]}<br>%{customdata[1]}<extra></extra>",
-            name="Partner",
-        ))
-
-    # Coordinator country (accent/teal)
-    if coord_rows:
-        fig.add_trace(go.Choropleth(
-            locations=[r["iso"] for r in coord_rows],
-            z=[2]*len(coord_rows),
-            text=[r["country"] for r in coord_rows],
-            customdata=[[r["n_partners"],r["partner_list"]+"<br>⭐ Coordinator"] for r in coord_rows],
-            colorscale=[[0,D["accent"]],[1,D["accent"]]],
-            showscale=False,
-            marker_line_color="rgba(255,255,255,0.5)",
-            marker_line_width=1.2,
-            hovertemplate="<b>%{text}</b><br>%{customdata[1]}<extra></extra>",
-            name="Coordinator",
-        ))
-
     fig.update_layout(
-        geo=dict(
-            scope=scope,
-            showcoastlines=True, coastlinecolor="rgba(255,255,255,0.15)",
-            showland=True,  landcolor="#1a2235",
-            showocean=True, oceancolor="#0f1421",
-            showframe=False, showcountries=True,
-            countrycolor="rgba(255,255,255,0.08)",
-            bgcolor="rgba(0,0,0,0)",
-        ),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        height=420,
-        margin=dict(l=0,r=0,t=40,b=0),
-        font_color=D["text"],
-        showlegend=True,
-        legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color=D["text"])),
-        title=dict(
-            text=f"🌍 Partner Countries — {project_title}" if project_title else "🌍 Partner Countries",
-            font=dict(color=D["text"], size=13)
-        ),
+        paper_bgcolor = "rgba(0,0,0,0)",
+        plot_bgcolor  = "rgba(0,0,0,0)",
+        height = 280,
+        margin = dict(l=20, r=20, t=60, b=20),
+        font   = dict(color=D["text"]),
     )
     return fig
 
