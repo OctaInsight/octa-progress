@@ -23,30 +23,32 @@ def _now():
 def get_funded_projects(organisation: str = "", is_admin: bool = False) -> tuple:
     """
     Returns (projects_list, error_string|None).
-    Matches proposals where status = 'Funded' (proposal app)
-    OR lifecycle_status = 'funded_project' (project phase).
-    No organisation filtering — all funded projects are visible.
+
+    A project is visible when:
+      status (original proposal field) IN {"Funded", "Ended"}
+      OR lifecycle_status IN {"funded_project","ongoing_project","ended_project"}
+
+    Non-funded statuses that must NEVER appear:
+      "Planned", "In preparation", "Submitted", "Missed", "Rejected"
     """
     try:
-        resp = db().table("proposals").select("*") \
-                   .order("proposal_id", desc=True).execute()
+        resp = db().table("proposals").select("*")                    .order("proposal_id", desc=True).execute()
         all_props = resp.data or []
     except Exception as e:
         return [], str(e)
 
-    FUNDED = {
-        "Funded", "funded",
-        "funded_project", "ongoing_project", "ended_project",
-        "Ongoing", "ongoing", "Ended", "ended",
-    }
+    # Exact values from the proposal app status dropdown
+    FUNDED_STATUS    = {"Funded", "Ended"}
+    FUNDED_LIFECYCLE = {"funded_project", "ongoing_project", "ended_project"}
 
     projects = [
         p for p in all_props
-        if (p.get("status") or "")           in FUNDED
-        or (p.get("lifecycle_status") or "")  in FUNDED
+        if (p.get("status") or "")           in FUNDED_STATUS
+        or (p.get("lifecycle_status") or "")  in FUNDED_LIFECYCLE
     ]
 
     return projects, None
+
 
 def get_project(proposal_id: str) -> dict | None:
     try:
