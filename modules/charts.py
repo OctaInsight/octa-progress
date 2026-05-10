@@ -31,7 +31,7 @@ def _layout(fig, title="", height=380):
     fig.update_layout(
         title=dict(text=title, font=dict(color=D["text"], size=13)) if title else None,
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        height=height, margin=dict(l=0, r=0, t=40 if title else 10, b=40),
+        height=height, margin=dict(l=10, r=10, t=80 if title else 20, b=50),
         font=dict(color=D["text"], size=11),
         legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color=D["text"], size=11),
                     orientation="h", yanchor="bottom", y=1.01, xanchor="left", x=0),
@@ -379,14 +379,31 @@ def chart_partner_map(partners, project_title="", scope="world"):
             name="Coordinator",
         ))
 
+    # For europe scope: use explicit lat/lon bounds so Turkey & Ukraine are visible
+    if scope == "europe":
+        geo_cfg = dict(
+            showcoastlines=True, coastlinecolor="rgba(255,255,255,0.15)",
+            showland=True, landcolor="#1a2235",
+            showocean=True, oceancolor="#0f1421",
+            showframe=False, showcountries=True,
+            countrycolor="rgba(255,255,255,0.08)",
+            bgcolor="rgba(0,0,0,0)",
+            projection_type="mercator",
+            lataxis_range=[30, 72],
+            lonaxis_range=[-28, 50],
+        )
+    else:
+        geo_cfg = dict(
+            scope=scope,
+            showcoastlines=True, coastlinecolor="rgba(255,255,255,0.15)",
+            showland=True, landcolor="#1a2235",
+            showocean=True, oceancolor="#0f1421",
+            showframe=False, showcountries=True,
+            countrycolor="rgba(255,255,255,0.08)",
+            bgcolor="rgba(0,0,0,0)",
+        )
     fig.update_layout(
-        geo=dict(scope=scope, showcoastlines=True,
-                 coastlinecolor="rgba(255,255,255,0.15)",
-                 showland=True, landcolor="#1a2235",
-                 showocean=True, oceancolor="#0f1421",
-                 showframe=False, showcountries=True,
-                 countrycolor="rgba(255,255,255,0.08)",
-                 bgcolor="rgba(0,0,0,0)"),
+        geo=geo_cfg,
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         height=420, margin=dict(l=0, r=0, t=40, b=0),
         font_color=D["text"], showlegend=True,
