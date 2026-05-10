@@ -147,7 +147,7 @@ def chart_milestone_timeline(milestones, project_start=None,
     fig.add_trace(go.Scatter(
         x=planned_x, y=names, mode="markers",
         marker=dict(symbol="circle", size=14,
-                    color=[c + "55" for c in status_colors],
+                    color=status_colors,  opacity=0.35,
                     line=dict(color=status_colors, width=2)),
         name="Planned", customdata=planned_lbl,
         hovertemplate="<b>%{y}</b><br>📅 Planned: %{customdata}<extra></extra>",
@@ -190,14 +190,14 @@ def chart_progress_over_time(snapshots, title="Overall Progress by Period"):
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=periods, y=[100] * len(periods), mode="lines",
-        line=dict(color=D["success"] + "55", dash="dash", width=2),
+        line=dict(color="rgba(111,207,151,0.33)", dash="dash", width=2),
         name="Target (100%)",
     ))
     fig.add_trace(go.Scatter(
         x=periods, y=progress, mode="lines+markers",
         line=dict(color=D["accent"], width=3),
         marker=dict(size=8, color=D["accent"]),
-        fill="tozeroy", fillcolor=D["accent"] + "22",
+        fill="tozeroy", fillcolor="rgba(0,188,212,0.13)",
         name="Actual Progress",
         hovertemplate="Period %{x}: %{y:.1f}%<extra></extra>",
     ))
@@ -223,13 +223,13 @@ def chart_wp_completion(work_packages, tasks, deliverables,
         del_done.append(sum(1 for d in wd if d.get("status") in ("accepted", "submitted")))
     fig = go.Figure()
     fig.add_trace(go.Bar(name="Tasks — Total",       x=wp_labels, y=task_total,
-                         marker_color=D["accent"] + "55",
+                         marker_color="rgba(0,188,212,0.33)",
                          hovertemplate="%{x}: %{y} tasks total<extra></extra>"))
     fig.add_trace(go.Bar(name="Tasks — Done",         x=wp_labels, y=task_done,
                          marker_color=D["accent"],
                          hovertemplate="%{x}: %{y} completed<extra></extra>"))
     fig.add_trace(go.Bar(name="Deliverables — Total", x=wp_labels, y=del_total,
-                         marker_color=D["success"] + "55",
+                         marker_color="rgba(111,207,151,0.33)",
                          hovertemplate="%{x}: %{y} deliverables total<extra></extra>"))
     fig.add_trace(go.Bar(name="Deliverables — Done",  x=wp_labels, y=del_done,
                          marker_color=D["success"],
@@ -280,9 +280,9 @@ def chart_kpi_achievement(kpis, title="KPI Achievement vs Target"):
         except: achieved.append(0)
     fig = go.Figure()
     fig.add_trace(go.Bar(name="Baseline", x=labels, y=baselines,
-                         marker_color=D["muted"] + "55"))
+                         marker_color="rgba(136,153,176,0.33)"))
     fig.add_trace(go.Bar(name="Target",   x=labels, y=targets,
-                         marker_color=D["accent"] + "55"))
+                         marker_color="rgba(0,188,212,0.33)"))
     fig.add_trace(go.Bar(name="Achieved", x=labels, y=achieved,
                          marker_color=D["success"]))
     fig.update_layout(barmode="group", xaxis_tickangle=-30)
